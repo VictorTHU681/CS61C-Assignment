@@ -22,14 +22,105 @@
 //and the left column as adjacent to the right column.
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule)
 {
-	//YOUR CODE HERE
+    int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    int rows = image->rows;
+    int cols = image->cols;
+    Color *new_color = malloc(sizeof(Color));
+    if (!new_color) return NULL;
+    Color old = image->image[row][col];
+    new_color->R = new_color->G = new_color->B = 0;
+    for (int bit = 0; bit < 8; bit++) {
+        // R
+        int alive = (old.R >> bit) & 1;
+        int count = 0;
+        for (int k = 0; k < 8; k++) {
+            int nr = (row + dr[k] + rows) % rows;
+            int nc = (col + dc[k] + cols) % cols;
+            Color n = image->image[nr][nc];
+            if ((n.R >> bit) & 1) count++;
+        }
+        int newbit;
+        if (alive == 0) {
+            // 死细胞，查rule的低9位
+            newbit = (rule >> count) & 1;
+        } else {
+            // 活细胞，查rule的高9位
+            newbit = (rule >> (9 + count)) & 1;
+        }
+        if (newbit) new_color->R |= (1 << bit);
+    }
+    for (int bit = 0; bit < 8; bit++) {
+        // G
+        int alive = (old.G >> bit) & 1;
+        int count = 0;
+        for (int k = 0; k < 8; k++) {
+            int nr = (row + dr[k] + rows) % rows;
+            int nc = (col + dc[k] + cols) % cols;
+            Color n = image->image[nr][nc];
+            if ((n.G >> bit) & 1) count++;
+        }
+        int newbit;
+        if (alive == 0) {
+            newbit = (rule >> count) & 1;
+        } else {
+            newbit = (rule >> (9 + count)) & 1;
+        }
+        if (newbit) new_color->G |= (1 << bit);
+    }
+    for (int bit = 0; bit < 8; bit++) {
+        // B
+        int alive = (old.B >> bit) & 1;
+        int count = 0;
+        for (int k = 0; k < 8; k++) {
+            int nr = (row + dr[k] + rows) % rows;
+            int nc = (col + dc[k] + cols) % cols;
+            Color n = image->image[nr][nc];
+            if ((n.B >> bit) & 1) count++;
+        }
+        int newbit;
+        if (alive == 0) {
+            newbit = (rule >> count) & 1;
+        } else {
+            newbit = (rule >> (9 + count)) & 1;
+        }
+        if (newbit) new_color->B |= (1 << bit);
+    }
+    return new_color;
 }
 
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 //You should be able to copy most of this from steganography.c
 Image *life(Image *image, uint32_t rule)
 {
-	//YOUR CODE HERE
+    if (!image) return NULL;
+    Image *out = malloc(sizeof(Image));
+    if (!out) return NULL;
+    out->rows = image->rows;
+    out->cols = image->cols;
+    out->image = malloc(out->rows * sizeof(Color*));
+    if (!out->image) { free(out); return NULL; }
+    for (uint32_t i = 0; i < out->rows; i++) {
+        out->image[i] = malloc(out->cols * sizeof(Color));
+        if (!out->image[i]) {
+            for (uint32_t k = 0; k < i; k++) free(out->image[k]);
+            free(out->image);
+            free(out);
+            return NULL;
+        }
+        for (uint32_t j = 0; j < out->cols; j++) {
+            Color *c = evaluateOneCell(image, i, j, rule);
+            if (!c) {
+                for (uint32_t k = 0; k <= i; k++) free(out->image[k]);
+                free(out->image);
+                free(out);
+                return NULL;
+            }
+            out->image[i][j] = *c;
+            free(c);
+        }
+    }
+    return out;
 }
 
 /*
@@ -49,5 +140,27 @@ You may find it useful to copy the code from steganography.c, to start.
 */
 int main(int argc, char **argv)
 {
-	//YOUR CODE HERE
+    if (argc != 3) {
+        printf("    usage: ./gameOfLife filename rule\n");
+        printf("    filename is an ASCII PPM file (type P3) with maximum value 255.\n");
+        printf("    rule is a hex number beginning with 0x; Life is 0x1808.\n");
+        return -1;
+    }
+    Image *img = readData(argv[1]);
+    if (!img) return -1;
+    char *endptr;
+    uint32_t rule = (uint32_t)strtol(argv[2], &endptr, 0);
+    if (*endptr != '\0') {
+        freeImage(img);
+        return -1;
+    }
+    Image *next = life(img, rule);
+    if (!next) {
+        freeImage(img);
+        return -1;
+    }
+    writeData(next);
+    freeImage(next);
+    freeImage(img);
+    return 0;
 }

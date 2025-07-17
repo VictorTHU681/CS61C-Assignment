@@ -21,13 +21,52 @@
 //Determines what color the cell at the given row/col should be. This should not affect Image, and should allocate space for a new Color.
 Color *evaluateOnePixel(Image *image, int row, int col)
 {
-	//YOUR CODE HERE
+    Color *new_color = malloc(sizeof(Color));
+    if (!new_color) return NULL;
+    uint8_t lsb = image->image[row][col].B & 1;
+    if (lsb) {
+        new_color->R = 255;
+        new_color->G = 255;
+        new_color->B = 255;
+    } else {
+        new_color->R = 0;
+        new_color->G = 0;
+        new_color->B = 0;
+    }
+    return new_color;
 }
 
 //Given an image, creates a new image extracting the LSB of the B channel.
 Image *steganography(Image *image)
 {
-	//YOUR CODE HERE
+    if (!image) return NULL;
+    Image *out = malloc(sizeof(Image));
+    if (!out) return NULL;
+    out->rows = image->rows;
+    out->cols = image->cols;
+    out->image = malloc(out->rows * sizeof(Color*));
+    if (!out->image) { free(out); return NULL; }
+    for (uint32_t i = 0; i < out->rows; i++) {
+        out->image[i] = malloc(out->cols * sizeof(Color));
+        if (!out->image[i]) {
+            for (uint32_t k = 0; k < i; k++) free(out->image[k]);
+            free(out->image);
+            free(out);
+            return NULL;
+        }
+        for (uint32_t j = 0; j < out->cols; j++) {
+            Color *c = evaluateOnePixel(image, i, j);
+            if (!c) {
+                for (uint32_t k = 0; k <= i; k++) free(out->image[k]);
+                free(out->image);
+                free(out);
+                return NULL;
+            }
+            out->image[i][j] = *c;
+            free(c);
+        }
+    }
+    return out;
 }
 
 /*
@@ -45,5 +84,16 @@ Make sure to free all memory before returning!
 */
 int main(int argc, char **argv)
 {
-	//YOUR CODE HERE
+    if (argc != 2) return -1;
+    Image *img = readData(argv[1]);
+    if (!img) return -1;
+    Image *decoded = steganography(img);
+    if (!decoded) {
+        freeImage(img);
+        return -1;
+    }
+    writeData(decoded);
+    freeImage(decoded);
+    freeImage(img);
+    return 0;
 }
