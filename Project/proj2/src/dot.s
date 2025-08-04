@@ -23,15 +23,15 @@ Ex1:
 	li t1, 1
 	bge a2, t1, Ex2 	
 	li a1, 75
-	exit2
+	jal exit2
 Ex2:	
 	bge a3, t1, Ex3	
 	li a1, 76
-	exit2
+	jal exit2
 Ex3:
 	bge a4, t1, setup 	
 	li a1, 76
-	exit2
+	jal exit2
 setup:
 	li t0, 0 # return value
 	li t2, 4 # byte offset

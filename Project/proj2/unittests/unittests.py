@@ -48,6 +48,7 @@ class TestRelu(TestCase):
         t.check_array(array0, [1, 0, 3, 0, 5, 0, 7, 0, 9])
         # generate the `assembly/TestRelu_test_simple.s` file and run it through venus
         t.execute()
+
     def test_zero(self):
         t = AssemblyTest(self, "relu.s")
         # create an array in the data section
@@ -62,6 +63,14 @@ class TestRelu(TestCase):
         t.check_array(array0, [0, 0, 0, 0, 5, 0, 7, 0, 9])
         # generate the `assembly/TestRelu_test_simple.s` file and run it through venus
         t.execute()
+     
+    def test_empty_vector(self):
+        t = AssemblyTest(self, "relu.s")
+        array0 = t.array([])
+        t.input_array("a0", array0)
+        t.input_scalar("a1", len(array0))
+        t.call("relu")
+        t.execute(code = 78)
      
 
     @classmethod
@@ -104,7 +113,6 @@ class TestArgmax(TestCase):
         t.execute()
 
     def test_max_at_last(self):
-
         t = AssemblyTest(self, "argmax.s")
         array0 = t.array([9, 10]) # upgragde this to get new test
         t.input_array("a0", array0)
@@ -112,6 +120,14 @@ class TestArgmax(TestCase):
         t.call("argmax")
         t.check_scalar("a0", 1) # also upgrade this
         t.execute()
+    
+    def test_empty_vector(self):
+        t = AssemblyTest(self, "argmax.s")
+        array0 = t.array([]) 
+        t.input_array("a0", array0)
+        t.input_scalar("a1", len(array0))
+        t.call("argmax")
+        t.execute(code = 77)
 
     @classmethod
     def tearDownClass(cls):
@@ -159,6 +175,42 @@ class TestDot(TestCase):
         t.check_scalar("a0", 22)
         t.execute()
 
+    def test_empty_arrays(self):
+        t = AssemblyTest(self, "dot.s")
+        array0 = t.array([]) 
+        array1 = t.array([]) 
+        t.input_array("a0", array0)
+        t.input_array("a1", array1)
+        t.input_scalar("a2", 0)
+        t.input_scalar("a3", 1)
+        t.input_scalar("a4", 2)
+        t.call("dot")
+        t.execute(code = 75)
+
+    def test_zero_stride_1(self):
+        t = AssemblyTest(self, "dot.s")
+        array0 = t.array([1,2,3,4,5,6,7,8,9]) 
+        array1 = t.array([1,2,3,4,5,6,7,8,9]) 
+        t.input_array("a0", array0)
+        t.input_array("a1", array1)
+        t.input_scalar("a2", 3)
+        t.input_scalar("a3", 0)
+        t.input_scalar("a4", 2)
+        t.call("dot")
+        t.execute(code = 76)
+
+    def test_zero_stride_2(self):
+        t = AssemblyTest(self, "dot.s")
+        array0 = t.array([1,2,3,4,5,6,7,8,9]) 
+        array1 = t.array([1,2,3,4,5,6,7,8,9]) 
+        t.input_array("a0", array0)
+        t.input_array("a1", array1)
+        t.input_scalar("a2", 3)
+        t.input_scalar("a3", 3)
+        t.input_scalar("a4", 0)
+        t.call("dot")
+        t.execute(code = 76)
+
     @classmethod
     def tearDownClass(cls):
         print_coverage("dot.s", verbose=False)
@@ -197,6 +249,46 @@ class TestMatmul(TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
             [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
             [30, 36, 42, 66, 81, 96, 102, 126, 150]
+        )
+
+    def test_Ex1_1(self):
+        self.do_matmul(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 0, 3,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
+            [30, 36, 42, 66, 81, 96, 102, 126, 150],
+            72
+        )
+
+    def test_Ex1_2(self):
+        self.do_matmul(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 0,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
+            [30, 36, 42, 66, 81, 96, 102, 126, 150],
+            72
+        )
+
+    def test_Ex2_1(self):
+        self.do_matmul(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 0, 3,
+            [30, 36, 42, 66, 81, 96, 102, 126, 150],
+            73
+        )
+
+    def test_Ex2_2(self):
+        self.do_matmul(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 0,
+            [30, 36, 42, 66, 81, 96, 102, 126, 150],
+            73
+        )
+
+    def test_Ex3(self):
+        self.do_matmul(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 3, 3,
+            [1, 2, 3, 4, 5, 6, 7, 8, 9], 2, 3,
+            [30, 36, 42, 66, 81, 96, 102, 126, 150],
+            74
         )
 
     @classmethod

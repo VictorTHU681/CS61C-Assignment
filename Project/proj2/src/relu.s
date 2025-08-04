@@ -1,4 +1,5 @@
 .globl relu
+
 .text
 # ==============================================================================
 # FUNCTION: Performs an inplace element-wise ReLU on an array of ints
