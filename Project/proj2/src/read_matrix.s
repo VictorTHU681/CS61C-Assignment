@@ -43,6 +43,10 @@ read_matrix:
 	mul a0, t0, s2
 	mv s2, a0 # s2 is # of bytes to malloc & read in
 	jal malloc
+	
+	li t1, -1
+	beq a0, t1, mallor_err 
+
 	mv s1, a0 # s1 is the pointer to malloced memory 
 
 	# Read from file
@@ -50,19 +54,32 @@ read_matrix:
 	li a2, 0 # read only 
 	jal fopen
 
+	li t1, -1
+	beq a0, t1, open_err 
+
 	mv s0, a0 # s0 is the descriptor
 	mv a1, s0
 	mv a2, s1
 	li a3, 8 
 	jal fread # First Read
 
+	li t1, 8
+	beq a0, t1, read_err 
+
 	mv a1, s0
 	mv a2, s1 # overwirte the previous read result
 	mv a3, s2 
 	jal fread # Second Read
 
+	mv t1, s2	
+	beq a0, t1, read_err 
+
 	# Close the file
 	mv a1, s0
+	jal fclose
+	
+	li t1, -1
+	beq a0, t1, close_err 
 
     # Epilogue
 	addi sp, sp, 16 
@@ -71,3 +88,17 @@ read_matrix:
 	lw s2, 8(sp)
 	lw ra, 12(sp)
     ret
+
+# Error Cases
+malloc_err:
+	li a1, 88
+	jal exit2	
+open_err:
+	li a1, 90 
+	jal exit2	
+read_err:
+	li a1, 91 
+	jal exit2	
+close_err:
+	li a1, 92 
+	jal exit2	
