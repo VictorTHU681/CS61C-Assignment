@@ -33,23 +33,11 @@ read_matrix:
 	sw s2, 8(sp)
 	sw ra, 12(sp)
 
-	mv s0, a0
-	lw s1 0(a1)
-	lw s2 0(a2) # transfer pointers to the ints
+	mv s0 a0
+	mv s1 a1
+	mv s2 a2
 	
-	# Malloc
-	li t0 4
-	mul t0, t0, s1
-	mul a0, t0, s2
-	mv s2, a0 # s2 is # of bytes to malloc & read in
-	jal malloc
-	
-	li t1, -1
-	beq a0, t1, mallor_err 
-
-	mv s1, a0 # s1 is the pointer to malloced memory 
-
-	# Read from file
+	# Open file
 	mv a1, s0
 	li a2, 0 # read only 
 	jal fopen
@@ -58,21 +46,45 @@ read_matrix:
 	beq a0, t1, open_err 
 
 	mv s0, a0 # s0 is the descriptor
+
+	# read rows and cols
+	mv a1, s0
+	mv a2, s1 
+	li a3, 4 
+	jal fread
+
+	li t1, 4
+	bne a0, t1, read_err 
+
+	mv a1, s0
+	mv a2, s2 
+	li a3, 4 
+	jal fread
+
+	li t1, 4
+	bne a0, t1, read_err 
+
+	# Malloc
+	lw s1, 0(s1)
+	lw s2, 0(s2) # transfer the pointer to int
+	li t0 4
+	mul t0, t0, s1
+	mul a0, t0, s2
+	mv s2, a0 # s2 is # of bytes to malloc & read in
+	jal malloc
+	
+	beq x0, a0, malloc_err 
+
+	mv s1, a0 # s1 is the pointer to malloced memory 
+
+	# Read Matrix
 	mv a1, s0
 	mv a2, s1
-	li a3, 8 
-	jal fread # First Read
-
-	li t1, 8
-	beq a0, t1, read_err 
-
-	mv a1, s0
-	mv a2, s1 # overwirte the previous read result
 	mv a3, s2 
-	jal fread # Second Read
+	jal fread
 
 	mv t1, s2	
-	beq a0, t1, read_err 
+	bne a0, t1, read_err 
 
 	# Close the file
 	mv a1, s0
@@ -80,13 +92,15 @@ read_matrix:
 	
 	li t1, -1
 	beq a0, t1, close_err 
+	
+	mv a0, s1
 
     # Epilogue
-	addi sp, sp, 16 
 	lw s0, 0(sp)
 	lw s1, 4(sp)
 	lw s2, 8(sp)
 	lw ra, 12(sp)
+	addi sp, sp, 16 
     ret
 
 # Error Cases
