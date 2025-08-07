@@ -73,8 +73,9 @@ inner_loop_start:
 	mv a0, s0
 	mv a1, s3
 	mv a2, s2
+
 	li a3, 1
-	mv a4, s2
+	mv a4, s5
 	jal ra dot # Finished a computation
 
 	sw a0, 0(s6) 
